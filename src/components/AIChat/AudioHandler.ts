@@ -137,10 +137,9 @@ function getAudioFormat(uri: string): string {
   const lowerCaseUri = uri.toLowerCase();
   if (lowerCaseUri.endsWith('.wav')) return 'wav';
   if (lowerCaseUri.endsWith('.mp3')) return 'mp3';
-  if (lowerCaseUri.endsWith('.m4a')) return 'mp3'; // Use mp3 for m4a (OpenAI accepts mp3)
-  if (lowerCaseUri.endsWith('.aac')) return 'mp3'; // Use mp3 for aac
-  
-  // Default based on platform
+  if (lowerCaseUri.endsWith('.m4a')) return 'mp3'; 
+  if (lowerCaseUri.endsWith('.aac')) return 'mp3'; 
+
   return Platform.OS === 'ios' ? 'wav' : 'mp3';
 }
 
@@ -161,17 +160,12 @@ function getAudioMimeType(format: string): string {
 async function transcribeAudio(audioUri: string): Promise<string> {
   try {
     console.log('Starting audio transcription...');
-    
-    // Create form data for the audio file
+
     const formData = new FormData();
-    
-    // Determine format based on file extension
     const format = getAudioFormat(audioUri);
     const mimeType = getAudioMimeType(format);
     
     console.log(`Audio format: ${format}, MIME type: ${mimeType}`);
-    
-    // Add the audio file to the form data
     formData.append('file', {
       uri: audioUri,
       type: mimeType,
@@ -179,13 +173,10 @@ async function transcribeAudio(audioUri: string): Promise<string> {
     } as any);
     
     formData.append('model', 'whisper-1');
-    
-    // Get the API key from OPENAI_CONFIG
     const apiKey = OPENAI_CONFIG.apiKey;
 
     console.log('Sending transcription request to OpenAI...');
-    
-    // Make direct fetch request to OpenAI API
+
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {

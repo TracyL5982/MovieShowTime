@@ -20,12 +20,16 @@ import AIChatBox from '../components/AIChatBox';
 import { store } from '../store';
 import { styles } from '../styles/MovieDetails.styles';
 import NavigationHeader from '../components/NavigationHeader';
-import { MovieShowtimeAPI, Movie, Showtime, FilmPerson } from '../services';
+import { MovieShowtimeAPI, Movie as ServiceMovie, ShowtimeDetails, FilmPerson } from '../services';
 import * as TMDbAPI from '../services/tmdb';
 import { TMDB_API_KEY } from '../config/apiKeys';
 import { COLORS } from '../styles/colors';
 
 const PLACEHOLDER_AVATAR = 'https://via.placeholder.com/70x70?text=No+Image';
+
+interface Movie extends Omit<ServiceMovie, 'showtimes'> {
+  showtimes: ShowtimeDetails[];
+}
 
 const MovieDetails = ({ route, navigation }) => {
   const { movieId, movieTitle } = route.params;
@@ -33,7 +37,7 @@ const MovieDetails = ({ route, navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [movie, setMovie] = useState<Movie | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedShowing, setSelectedShowing] = useState<Showtime | null>(null);
+  const [selectedShowing, setSelectedShowing] = useState<ShowtimeDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [usingFallback, setUsingFallback] = useState(false);
@@ -48,7 +52,7 @@ const MovieDetails = ({ route, navigation }) => {
       let movieData: Movie | null = null;
       
       if (movieId) {
-        const existingMovie = movies.find(m => m.id === movieId);
+        const existingMovie = movies.find(m => m.id === movieId) as unknown as Movie;
         
         if (existingMovie && existingMovie.showtimes && existingMovie.showtimes.length > 0) {
           movieData = existingMovie;
@@ -56,7 +60,9 @@ const MovieDetails = ({ route, navigation }) => {
         } else {
           console.log('Fetching movie details for ID:', movieId);         
           const details = await MovieShowtimeAPI.getMovieDetails(parseInt(movieId));
-          const showtimes = await MovieShowtimeAPI.getShowtimesForMovie(movieId);
+          
+          const aiShowtimesResult = await MovieShowtimeAPI.getAIShowtimesForMovie(details?.title || 'Unknown Movie');
+          const showtimes = aiShowtimesResult.showtimes;
           
           let ageRating = 'PG-13'; 
           
@@ -89,7 +95,10 @@ const MovieDetails = ({ route, navigation }) => {
             time: s.time,
             date: s.date,
             theater: s.theater,
-            price: typeof s.price === 'string' ? parseFloat(s.price.replace('$', '')) : s.price,
+            price: s.price,
+            id: s.id || `${s.theater}-${s.time}`,
+            movieTitle: details?.title || 'Unknown Movie',
+            format: s.format || 'Standard'
           }));
           
           const castWithProfiles = details?.credits?.cast?.slice(0, 5).map(actor => ({
@@ -141,7 +150,7 @@ const MovieDetails = ({ route, navigation }) => {
         );
         
         if (existingMovie) {
-          movieData = existingMovie;
+          movieData = existingMovie as unknown as Movie;
           console.log('Found movie in state:', movieData.title);
           setUsingFallback(false);
         } else {
@@ -159,7 +168,8 @@ const MovieDetails = ({ route, navigation }) => {
               
               const details = await MovieShowtimeAPI.getMovieDetails(parseInt(bestMatch.id));
               
-              const showtimes = await MovieShowtimeAPI.getShowtimesForMovie(bestMatch.id);
+              const aiShowtimesResult = await MovieShowtimeAPI.getAIShowtimesForMovie(bestMatch.title);
+              const showtimes = aiShowtimesResult.showtimes;
               
               const castWithProfiles = details?.credits?.cast?.slice(0, 5).map(actor => ({
                 name: actor.name,
@@ -204,7 +214,10 @@ const MovieDetails = ({ route, navigation }) => {
                   time: s.time,
                   date: s.date,
                   theater: s.theater,
-                  price: typeof s.price === 'string' ? parseFloat(s.price.replace('$', '')) : s.price,
+                  price: s.price,
+                  id: s.id || `${s.theater}-${s.time}`,
+                  movieTitle: bestMatch.title,
+                  format: s.format || 'Standard'
                 })),
                 cast: castWithProfiles,
                 ageRating: ageRating,
@@ -273,7 +286,7 @@ const MovieDetails = ({ route, navigation }) => {
     setSelectedShowing(null);
   };
   
-  const handleShowtimeSelect = (showtime: Showtime) => {
+  const handleShowtimeSelect = (showtime: ShowtimeDetails) => {
     setSelectedShowing(showtime);
   };
   
@@ -336,8 +349,8 @@ const MovieDetails = ({ route, navigation }) => {
     };
   };
   
-  const generateFallbackShowtimes = (): TMDbAPI.Showtime[] => {
-    const showtimes: TMDbAPI.Showtime[] = [];
+  const generateFallbackShowtimes = (): ShowtimeDetails[] => {
+    const showtimes: ShowtimeDetails[] = [];
     const theaters = [
       'AMC Theater Downtown',
       'Regal Cinemas Westfield',
@@ -359,7 +372,9 @@ const MovieDetails = ({ route, navigation }) => {
             time,
             date: dateString,
             theater,
-            price: 12.99 
+            price: '$12.99',
+            id: `fallback-${Date.now()}-${Math.random()}`,
+            movieTitle: 'Unknown Movie'
           });
         });
       });

@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { MovieShowtimeAPI } from '../services';
-import { Cinema } from '../services';
+import { MovieShowtimeAPI, Cinema } from '../services';
 
 interface CinemaState {
   cinemas: Cinema[];
@@ -16,24 +15,29 @@ const initialState: CinemaState = {
   error: null,
 };
 
-export const fetchCinemas = createAsyncThunk(
+// Modified to use AI-based cinema search instead of mock data
+export const fetchCinemas = createAsyncThunk<Cinema[], number>(
   'cinemas/fetchCinemas',
   async (limit: number = 5, { rejectWithValue }) => {
     try {
-      console.log('Fetching cinemas using our location-based service');
-      return await MovieShowtimeAPI.getNearbyCinemas(limit);
+      console.log('This functionality has been replaced by AI-based cinema search');
+      // Return empty array since the mock data function was removed
+      // In the actual app, cinema data comes from AI search responses
+      return [];
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-export const fetchCinema = createAsyncThunk(
+export const fetchCinema = createAsyncThunk<Cinema | null, string>(
   'cinemas/fetchCinema',
   async (cinemaId: string, { rejectWithValue }) => {
     try {
-      console.log(`Fetching cinema details for ID: ${cinemaId}`);
-      return await MovieShowtimeAPI.getCinema(cinemaId);
+      console.log(`This functionality has been replaced by AI-based cinema search`);
+      // Return null since the mock data function was removed
+      // In the actual app, cinema data comes from AI search responses
+      return null;
     } catch (error) {
       return rejectWithValue(error.message);
     }

@@ -72,11 +72,9 @@ export default function App() {
       <NavigationContainer
         ref={navigationRef}
         onReady={() => {
-          // Save the initial route name
           const currentRoute = navigationRef.current?.getCurrentRoute();
           routeNameRef.current = currentRoute?.name || null;
-          
-          // Add the initial route to history if it exists
+
           if (currentRoute?.name) {
             console.log(`Adding initial route: ${currentRoute.name}`);
             navigationHistory.addToHistory(currentRoute.name, currentRoute.params);
@@ -90,16 +88,13 @@ export default function App() {
           if (currentRouteName && previousRouteName !== currentRouteName) {
             console.log(`Navigation changed: ${previousRouteName} → ${currentRouteName}`);
             
-            // Record route change to history
             navigationHistory.addToHistory(currentRouteName, currentRoute?.params);
             
-            // For debugging - check if logHistory exists before calling
             if (typeof navigationHistory.logHistory === 'function') {
               navigationHistory.logHistory();
             }
           }
           
-          // Save the current route name for the next state change
           routeNameRef.current = currentRouteName ?? null;
         }}
       >

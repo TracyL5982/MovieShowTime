@@ -7,7 +7,6 @@ import { setResponse, addMessageToHistory, ChatMessage } from '../store/aiSlice'
 import { AppDispatch } from '../store';
 import { styles } from '../styles/StartScreen.styles';
 import { MovieShowtimeAPI } from '../services';
-import { searchMovies } from '../store/movieSlice';
 import { useRoute } from '@react-navigation/native';
 import navigationHistory from '../services/navigationHistory';
 import { COLORS } from '../styles/theme';

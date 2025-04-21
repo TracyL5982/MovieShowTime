@@ -5,6 +5,24 @@ import { OPENAI_CONFIG } from '../config/apiKeys';
 // OpenAI API configuration with proper API key
 const openai = new OpenAI(OPENAI_CONFIG);
 
+// Cinema interface moved from cinema.ts
+export interface Cinema {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  distance?: number; 
+  distance_km?: number; 
+  movies?: any[];
+  logo?: string;
+}
+
 export interface ShowtimeDetails {
   time: string;
   endTime?: string;

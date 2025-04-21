@@ -9,7 +9,7 @@ export interface RouteEntry {
 let history: RouteEntry[] = [];
 let index = -1;
 const HISTORY_STORAGE_KEY = 'navigation_history';
-const DEBUG = true; // Set to true to enable debug logs
+const DEBUG = true; 
 
 // Debug logging
 const debug = (...args: any[]) => {
@@ -31,7 +31,6 @@ const initialize = async (): Promise<void> => {
     }
   } catch (error) {
     console.error('Failed to load navigation history:', error);
-    // Initialize with empty history if loading fails
     history = [];
     index = -1;
   }
@@ -60,7 +59,6 @@ const addToHistory = (routeName: string, params?: object): void => {
   
   // Check if we're already at this route (prevent duplicates)
   if (index >= 0 && history[index]?.routeName === routeName) {
-    // Just update params if needed
     if (params && JSON.stringify(history[index].params) !== JSON.stringify(params)) {
       history[index].params = params;
       persistHistory();
@@ -132,7 +130,6 @@ const clearHistory = (): void => {
   debug('Navigation history cleared');
 };
 
-// Get the current entry
 const getCurrentEntry = (): RouteEntry | null => {
   if (index >= 0 && index < history.length) {
     return history[index];
@@ -140,12 +137,10 @@ const getCurrentEntry = (): RouteEntry | null => {
   return null;
 };
 
-// For debugging: get the entire history
 const getHistory = (): { history: RouteEntry[], index: number } => {
   return { history, index };
 };
 
-// Log the current history state
 const logHistory = (): void => {
   debug('--- Navigation History ---');
   debug(`Total entries: ${history.length}, Current index: ${index}`);
@@ -161,7 +156,6 @@ const logHistory = (): void => {
   debug('-------------------------');
 };
 
-// Export all methods
 const navigationHistory = {
   initialize,
   addToHistory,

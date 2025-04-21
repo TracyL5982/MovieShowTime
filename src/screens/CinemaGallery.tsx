@@ -20,22 +20,6 @@ interface ExtendedCinema extends Cinema {
   url?: string; 
 }
 
-const aiStyles = StyleSheet.create({
-  aiTag: {
-    backgroundColor: '#FEBD69',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginTop: 5,
-    alignSelf: 'flex-start'
-  },
-  aiTagText: {
-    color: '#000000',
-    fontSize: 10,
-    fontWeight: '500',
-  }
-});
-
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   if (!lat1 || !lon1 || !lat2 || !lon2) return null;
   
@@ -54,7 +38,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 const CinemaGallery = ({ navigation, route }) => {
   const { aiResponse, searchCinemas = [], searchQuery, fromAI = false } = route.params || {};
-  const dispatch = useDispatch();
   const [aiCinemas, setAiCinemas] = useState<ExtendedCinema[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

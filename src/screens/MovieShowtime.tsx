@@ -82,9 +82,8 @@ const MovieShowtime = ({ navigation, route }) => {
     
     try {
       const dateString = selectedDate.toISOString().split('T')[0];
-      const targetMovieId = movieId || (selectedMovie ? 
-        movies.find(m => m.title === selectedMovie)?.id : null);
       let apiShowtimes: ShowtimeDetails[] = [];
+      
       if (movieName) {
         console.log('Getting AI showtimes for movie:', movieName, 'date:', dateString);
 
@@ -115,47 +114,45 @@ const MovieShowtime = ({ navigation, route }) => {
           throw new Error('Failed to get showtimes from AI: ' + aiError.message);
         }
       }
-      else if (targetMovieId) {
-        console.log('Getting showtimes for movie ID:', targetMovieId);
-        apiShowtimes = await MovieShowtimeAPI.getShowtimesForMovie(targetMovieId);
-      } 
-      
-      else if (cinemaId) {
-        console.log('Getting showtimes for cinema:', cinemaId);
-        const showtimesByMovie = await MovieShowtimeAPI.getMoviesAtCinema(cinemaId);
-        
-        
-        const allMovies = await MovieShowtimeAPI.getMovies();
-        
-        
-        for (const [movieId, showtimes] of Object.entries(showtimesByMovie)) {
-          const movie = allMovies.find(m => m.id === movieId);
+      else if (cinemaId && movieName) {
+        console.log('Getting AI showtimes for cinema and movie:', cinemaId, movieName);
+        try {
+          const aiShowtimesResult = await MovieShowtimeAPI.getAIShowtimesForCinema(cinemaName, dateString);
+          console.log(`Found ${aiShowtimesResult.showtimes.length} showtimes for cinema ${cinemaName} from AI search`);
           
+          apiShowtimes = aiShowtimesResult.showtimes.filter(
+            showtime => showtime.movieTitle === movieName
+          );
           
-          const processed = showtimes.map(s => ({
-            id: s.id,
-            movieId: s.movieId,
-            movieTitle: movie?.title || 'Unknown Movie',
-            theater: s.theater,
-            theaterId: s.cinemaId,
-            date: s.date,
-            time: s.time,
-            price: s.price,
-            format: s.format
-          }));
-          
-          apiShowtimes = [...apiShowtimes, ...processed];
-        }
-      } 
-      else {
-        console.log('Getting showtimes for popular movies');
-        const movies = await MovieShowtimeAPI.getMovies();
-        if (movies.length > 0) {
-          const popularMovieId = movies[0]?.id;
-          if (popularMovieId) {
-            apiShowtimes = await MovieShowtimeAPI.getShowtimesForMovie(popularMovieId);
+          if (apiShowtimes.length === 0) {
+            setNoShowtimesMessage(`No showtimes found for ${movieName} at ${cinemaName} on the selected date.`);
           }
+        } catch (aiError) {
+          console.error('Error in AI cinema showtime search:', aiError);
+          throw new Error('Failed to get showtimes from AI: ' + aiError.message);
         }
+      }
+      else if (cinemaId) {
+        console.log('Getting AI showtimes for cinema:', cinemaName);
+        try {
+          const aiShowtimesResult = await MovieShowtimeAPI.getAIShowtimesForCinema(cinemaName, dateString);
+          console.log(`Found ${aiShowtimesResult.showtimes.length} showtimes for cinema ${cinemaName} from AI search`);
+          
+          apiShowtimes = aiShowtimesResult.showtimes;
+          
+          if (apiShowtimes.length === 0) {
+            setNoShowtimesMessage(`No showtimes found for ${cinemaName} on the selected date.`);
+          }
+        } catch (aiError) {
+          console.error('Error in AI cinema showtime search:', aiError);
+          throw new Error('Failed to get showtimes from AI: ' + aiError.message);
+        }
+      }
+      else {
+        console.log('No movie or cinema specified for showtimes search');
+        setNoShowtimesMessage('Please specify a movie or cinema to see showtimes.');
+        setLoading(false);
+        return;
       }
       
       console.log(`Total showtimes found before filtering: ${apiShowtimes.length}`);
@@ -166,13 +163,12 @@ const MovieShowtime = ({ navigation, route }) => {
       
       console.log(`Showtimes after date filtering (${dateString}): ${filteredShowtimes.length}`);
       
-      if (movieName && !movieId) {
+      if (movieName) {
         filteredShowtimes = filteredShowtimes.filter(
           showtime => showtime.movieTitle === movieName
         );
         console.log(`Showtimes after title filtering (${movieName}): ${filteredShowtimes.length}`);
       }
-      
       
       if (selectedCinema) {
         filteredShowtimes = filteredShowtimes.filter(
@@ -195,7 +191,7 @@ const MovieShowtime = ({ navigation, route }) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, selectedMovie, selectedCinema, movieId, movieName, movies, cinemaId]);
+  }, [selectedDate, selectedMovie, selectedCinema, movieId, movieName, movies, cinemaId, cinemaName]);
 
   useEffect(() => {
     setLoading(true);
