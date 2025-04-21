@@ -34,6 +34,8 @@ export const formatStructuredCinemaResponse = (structuredData: any): string => {
 /**
  * Formats movie-only responses to remove cinema details
  */
+
+
 export const formatMovieOnlyResponse = async (responseText: string, movieInfoList: any[]): Promise<string> => {
   try {
     console.log('Processing movie-only response to remove cinema details');
