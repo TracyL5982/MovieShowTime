@@ -34,5 +34,14 @@ export const COLORS = {
   // iOS Colors
   iosBlue: '#007AFF',
   iosLightGray: '#F2F2F7',
+  
+  // New Colors for Chat History UI
+  shadowBlack: '#000000',
+  paleBlue: '#E6F2FF',
+  paleGray: '#EAEAEA',
+  paleGreen: '#E6F5EA',
+  paleRed: '#FFEBEE',
+  red: '#D32F2F',
+  darkGreen: '#1B5E20',
 }; 
   

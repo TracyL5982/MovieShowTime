@@ -4,7 +4,7 @@ import { COLORS, RADIUS, SHADOWS, PLATFORM_SPECIFIC, FONTS, FONT_SIZES } from '.
 // Define common values for consistency
 export const inputTheme = {
   colors: {
-    primary: COLORS.iosBlue,
+    primary: COLORS.amazonBlue,
     placeholder: COLORS.silverGray,
     text: COLORS.eerieBlack,
     underlineColor: 'transparent',
@@ -117,18 +117,68 @@ export const styles = StyleSheet.create({
     marginRight: 16,
   },
   
+  // Response content container - horizontal layout for text and TTS button
+  responseContentContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  
+  // Response text container with scrollview
+  responseTextContainer: {
+    flex: 1,
+    maxHeight: 350,
+    paddingBottom: 16,
+  },
+  
+  // Expanded response text container
+  expandedResponseTextContainer: {
+    maxHeight: 350,
+  },
+  
+  // TextToSpeech container
+  textToSpeechContainer: {
+    marginLeft: 8,
+    alignSelf: 'flex-start',
+  },
+  
+  // Expand/collapse button
+  expandCollapseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    marginHorizontal: 16,
+    marginBottom: 6,
+    backgroundColor: 'transparent',
+    borderRadius: RADIUS.small,
+  },
+  
+  // Expand/collapse button text
+  expandCollapseButtonText: {
+    fontSize: 12,
+    fontFamily: FONTS.primaryMedium,
+    color: COLORS.amazonBlue,
+    marginRight: 2,
+  },
+  
+  // Expand/collapse icon
+  expandCollapseIcon: {
+    marginTop: 1,
+  },
+  
   // AI response text
   responseText: {
     fontSize: FONT_SIZES.small,
     fontFamily: FONTS.primaryRegular,
     color: COLORS.eerieBlack,
-    marginBottom: 10, 
+    marginBottom: 10,
+    flex: 1,
   },
   
   // Response container when expanded
   expandedResponseContainer: {
     maxHeight: 400,
-    overflow: 'scroll',
   },
   
   // Response container when truncated
@@ -158,7 +208,7 @@ export const styles = StyleSheet.create({
   toggleButtonText: {
     fontSize: 12,
     fontFamily: FONTS.primaryRegular,
-    color: '#0066c0', 
+    color: COLORS.amazonBlue, 
   },
   
   // Response container when there is no response

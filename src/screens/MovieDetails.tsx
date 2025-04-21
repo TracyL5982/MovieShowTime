@@ -8,17 +8,22 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Linking,
-  RefreshControl
+  RefreshControl,
+  StyleSheet
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedMovie } from '../store/movieSlice';
+import { setSelectedMovie, searchMovies } from '../store/movieSlice';
 import { RootState } from '../store/index';
 import { AppDispatch } from '../store';
 import AIChatBox from '../components/AIChatBox';
 import { store } from '../store';
 import { styles } from '../styles/MovieDetails.styles';
-import { MovieShowtimeAPI, Movie, Showtime } from '../services';
+import NavigationHeader from '../components/NavigationHeader';
+import { MovieShowtimeAPI, Movie, Showtime, FilmPerson } from '../services';
+import * as TMDbAPI from '../services/tmdb';
+import { TMDB_API_KEY } from '../config/apiKeys';
+import { COLORS } from '../styles/colors';
 
 const PLACEHOLDER_AVATAR = 'https://via.placeholder.com/70x70?text=No+Image';
 
@@ -33,6 +38,8 @@ const MovieDetails = ({ route, navigation }) => {
   const [retryCount, setRetryCount] = useState(0);
   const [usingFallback, setUsingFallback] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
+  const { movies } = useSelector((state: RootState) => state.movies);
+  const { chatboxHeight } = useSelector((state: RootState) => state.ai);
 
   const fetchMovieData = useCallback(async () => {
     try {
@@ -41,8 +48,7 @@ const MovieDetails = ({ route, navigation }) => {
       let movieData: Movie | null = null;
       
       if (movieId) {
-        const state = store.getState();
-        const existingMovie = state.movies.movies.find(m => m.id === movieId);
+        const existingMovie = movies.find(m => m.id === movieId);
         
         if (existingMovie && existingMovie.showtimes && existingMovie.showtimes.length > 0) {
           movieData = existingMovie;
@@ -51,12 +57,60 @@ const MovieDetails = ({ route, navigation }) => {
           console.log('Fetching movie details for ID:', movieId);         
           const details = await MovieShowtimeAPI.getMovieDetails(parseInt(movieId));
           const showtimes = await MovieShowtimeAPI.getShowtimesForMovie(movieId);
+          
+          let ageRating = 'PG-13'; 
+          
+          try {
+            const releaseDatesResponse = await fetch(
+              `https://api.themoviedb.org/3/movie/${movieId}/release_dates?api_key=${TMDB_API_KEY}`
+            );
+            const releaseDatesData = await releaseDatesResponse.json();
+            
+            if (releaseDatesData?.results) {
+              const usReleases = releaseDatesData.results.find(
+                country => country.iso_3166_1 === 'US'
+              );
+              
+              if (usReleases?.release_dates?.length > 0) {
+                const certification = usReleases.release_dates.find(
+                  release => release.certification && release.certification.length > 0
+                )?.certification;
+                
+                if (certification) {
+                  ageRating = certification;
+                }
+              }
+            }
+          } catch (certError) {
+            console.error('Error fetching certification:', certError);
+          }
+          
           const mappedShowtimes = showtimes.map(s => ({
             time: s.time,
             date: s.date,
             theater: s.theater,
-            price: parseFloat(s.price),
+            price: typeof s.price === 'string' ? parseFloat(s.price.replace('$', '')) : s.price,
           }));
+          
+          const castWithProfiles = details?.credits?.cast?.slice(0, 5).map(actor => ({
+            name: actor.name,
+            profile_path: actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : PLACEHOLDER_AVATAR
+          })) || [];
+          
+          const directors = details?.credits?.crew
+            ?.filter(person => person.job === 'Director')
+            .map(director => ({
+              name: director.name,
+              profile_path: director.profile_path ? `https://image.tmdb.org/t/p/w185${director.profile_path}` : PLACEHOLDER_AVATAR
+            })) || [];
+            
+          const writers = details?.credits?.crew
+            ?.filter(person => ['Writer', 'Screenplay'].includes(person.job))
+            .map(writer => ({
+              name: writer.name,
+              job: writer.job,
+              profile_path: writer.profile_path ? `https://image.tmdb.org/t/p/w185${writer.profile_path}` : PLACEHOLDER_AVATAR
+            })) || [];
           
           movieData = {
             id: movieId,
@@ -65,13 +119,14 @@ const MovieDetails = ({ route, navigation }) => {
             backdrop: details?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${details.backdrop_path}` : undefined,
             rating: details?.vote_average || 0,
             description: details?.overview || 'No description available',
-            cast: details?.credits?.cast?.slice(0, 5).map(actor => actor.name) || [],
+            cast: castWithProfiles,
             releaseDate: details?.release_date,
             runtime: details?.runtime,
             genres: details?.genres?.map(genre => genre.name) || [],
             showtimes: mappedShowtimes,
-            ageRating: details?.adult ? 'R' : 'PG-13',
-            directors: details?.credits?.crew?.filter(person => person.job === 'Director').map(director => director.name) || [],
+            ageRating: ageRating,
+            directors: directors,
+            writers: writers,
             distributors: details?.production_companies?.map(company => company.name) || [],
             trailers: details?.videos?.results || []
           };
@@ -81,8 +136,7 @@ const MovieDetails = ({ route, navigation }) => {
       } else if (movieTitle) {
         console.log('Searching for movie by title:', movieTitle);
         
-        const state = store.getState();
-        const existingMovie = state.movies.movies.find(
+        const existingMovie = movies.find(
           m => m.title.toLowerCase() === movieTitle.toLowerCase()
         );
         
@@ -91,9 +145,84 @@ const MovieDetails = ({ route, navigation }) => {
           console.log('Found movie in state:', movieData.title);
           setUsingFallback(false);
         } else {
-          console.warn('Movie not found by title, using fallback movie data');
-          movieData = generateFallbackMovie(movieTitle);
-          setUsingFallback(true);
+          try {
+            console.log('Searching TMDB for movie:', movieTitle);
+            const searchResults = await dispatch(searchMovies(movieTitle)).unwrap();
+            console.log('Search results:', searchResults?.length || 0);
+            
+            if (searchResults && searchResults.length > 0) {
+              const bestMatch = searchResults.find(m => 
+                m.title.toLowerCase() === movieTitle.toLowerCase()
+              ) || searchResults[0];
+              
+              console.log('Using best match from search:', bestMatch.title);
+              
+              const details = await MovieShowtimeAPI.getMovieDetails(parseInt(bestMatch.id));
+              
+              const showtimes = await MovieShowtimeAPI.getShowtimesForMovie(bestMatch.id);
+              
+              const castWithProfiles = details?.credits?.cast?.slice(0, 5).map(actor => ({
+                name: actor.name,
+                profile_path: actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : PLACEHOLDER_AVATAR
+              })) || [];
+              
+              let ageRating = 'PG-13'; 
+              if (details?.release_dates?.results) {
+                const usReleases = details.release_dates.results.find(
+                  country => country.iso_3166_1 === 'US'
+                );
+                
+                if (usReleases?.release_dates?.length > 0) {
+                  const certification = usReleases.release_dates.find(
+                    release => release.certification && release.certification.length > 0
+                  )?.certification;
+                  
+                  if (certification) {
+                    ageRating = certification;
+                  }
+                }
+              }
+              
+              const directors = details?.credits?.crew
+                ?.filter(person => person.job === 'Director')
+                .map(director => ({
+                  name: director.name,
+                  profile_path: director.profile_path ? `https://image.tmdb.org/t/p/w185${director.profile_path}` : PLACEHOLDER_AVATAR
+                })) || [];
+                
+              const writers = details?.credits?.crew
+                ?.filter(person => ['Writer', 'Screenplay'].includes(person.job))
+                .map(writer => ({
+                  name: writer.name,
+                  job: writer.job,
+                  profile_path: writer.profile_path ? `https://image.tmdb.org/t/p/w185${writer.profile_path}` : PLACEHOLDER_AVATAR
+                })) || [];
+              
+              movieData = {
+                ...bestMatch,
+                showtimes: showtimes.map(s => ({
+                  time: s.time,
+                  date: s.date,
+                  theater: s.theater,
+                  price: typeof s.price === 'string' ? parseFloat(s.price.replace('$', '')) : s.price,
+                })),
+                cast: castWithProfiles,
+                ageRating: ageRating,
+                directors: directors,
+                writers: writers
+              };
+              
+              setUsingFallback(false);
+            } else {
+              console.warn('Movie not found in search, using fallback data');
+              movieData = generateFallbackMovie(movieTitle);
+              setUsingFallback(true);
+            }
+          } catch (searchError) {
+            console.error('Error searching for movie:', searchError);
+            movieData = generateFallbackMovie(movieTitle);
+            setUsingFallback(true);
+          }
         }
       }
       
@@ -128,11 +257,10 @@ const MovieDetails = ({ route, navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [movieId, movieTitle, retryCount]);
+  }, [movieId, movieTitle, retryCount, dispatch, movies]);
   
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setRetryCount(0); 
     fetchMovieData();
   }, [fetchMovieData]);
   
@@ -152,9 +280,11 @@ const MovieDetails = ({ route, navigation }) => {
   const handleBooking = () => {
     if (movie) {
       navigation.navigate('MovieShowtime', {
-        movieId: movie.id,
-        movieTitle: movie.title,
-        poster: movie.poster
+        id: movie.id,
+        title: movie.title,
+        poster: movie.poster,
+        date: new Date().toISOString().split('T')[0],
+        fromAI: route.params?.fromAI || false
       });
     }
   };
@@ -173,8 +303,7 @@ const MovieDetails = ({ route, navigation }) => {
 
   const renderStars = (rating) => {
     if (!rating) return 'No rating';
-    const stars = Math.round(rating / 2);
-    return `${stars}/5 ★`;
+    return `${rating.toFixed(1)}/10`;
   };
 
   const generateFallbackMovie = (title: string): Movie => {
@@ -184,20 +313,31 @@ const MovieDetails = ({ route, navigation }) => {
       poster: 'https://via.placeholder.com/500x750?text=' + encodeURIComponent(title),
       rating: 0,
       description: 'Movie information is currently unavailable. Please check back later.',
-      cast: ['Cast information unavailable'],
+      cast: [{ 
+        name: 'Cast information unavailable', 
+        profile_path: PLACEHOLDER_AVATAR 
+      }],
       showtimes: generateFallbackShowtimes(),
       releaseDate: new Date().getFullYear().toString(),
       runtime: 120,
       genres: ['Unknown'],
       ageRating: 'PG-13',
-      directors: ['Unknown Director'],
+      directors: [{ 
+        name: 'Unknown Director', 
+        profile_path: PLACEHOLDER_AVATAR 
+      }],
+      writers: [{ 
+        name: 'Unknown Writer', 
+        job: 'Writer', 
+        profile_path: PLACEHOLDER_AVATAR 
+      }],
       distributors: ['Unknown Studio'],
       trailers: []
     };
   };
   
-  const generateFallbackShowtimes = (): import('../services/tmdb').Showtime[] => {
-    const showtimes: import('../services/tmdb').Showtime[] = [];
+  const generateFallbackShowtimes = (): TMDbAPI.Showtime[] => {
+    const showtimes: TMDbAPI.Showtime[] = [];
     const theaters = [
       'AMC Theater Downtown',
       'Regal Cinemas Westfield',
@@ -228,25 +368,49 @@ const MovieDetails = ({ route, navigation }) => {
     return showtimes;
   };
 
+  // Create dynamic styles based on chatbox height
+  const dynamicStyles = StyleSheet.create({
+    contentPadding: {
+      paddingBottom: chatboxHeight > 0 ? chatboxHeight + 20 : 120, 
+    }
+  });
+
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FEBD69" />
-        <Text style={styles.loadingText}>Loading movie details...</Text>
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FEBD69" />
+          <Text style={styles.loadingText}>Loading movie details...</Text>
+        </View>
       </View>
     );
   }
 
-  if (error || !movie) {
+  if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error || 'Failed to load movie details.'}</Text>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>Go Back</Text>
-        </TouchableOpacity>
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={{ 
+              padding: 12, 
+              backgroundColor: '#FEBD69', 
+              borderRadius: 8, 
+              marginTop: 16,
+              alignItems: 'center'
+            }}
+            onPress={() => {
+              setRetryCount(0);
+              fetchMovieData();
+            }}
+          >
+            <Text style={{ 
+              color: '#232F3E', 
+              fontWeight: 'bold', 
+              fontSize: 16 
+            }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -263,10 +427,10 @@ const MovieDetails = ({ route, navigation }) => {
           {movie.cast.map((actor, index) => (
             <View key={index} style={styles.castItem}>
               <Image 
-                source={{ uri: PLACEHOLDER_AVATAR }} 
+                source={{ uri: actor.profile_path || PLACEHOLDER_AVATAR }} 
                 style={styles.castImage} 
               />
-              <Text style={styles.castName} numberOfLines={2}>{actor}</Text>
+              <Text style={styles.castName} numberOfLines={2}>{actor.name}</Text>
             </View>
           ))}
         </View>
@@ -276,15 +440,11 @@ const MovieDetails = ({ route, navigation }) => {
 
   const renderCrewSection = () => {
     const hasDirectors = movie.directors && movie.directors.length > 0;
-    const hasDistributors = !!movie.distributors;
+    const hasDistributors = movie.distributors && movie.distributors.length > 0;
+    const hasWriters = movie.writers && movie.writers.length > 0;
 
-    if (!hasDirectors && !hasDistributors) {
-      return (
-        <>
-          <Text style={styles.directorsInfo}>Director information not available</Text>
-          <Text style={styles.producersInfo}>Producer information not available</Text>
-        </>
-      );
+    if (!hasDirectors && !hasDistributors && !hasWriters) {
+      return null;
     }
 
     return (
@@ -296,11 +456,29 @@ const MovieDetails = ({ route, navigation }) => {
               {movie.directors.map((director, index) => (
                 <View key={index} style={styles.crewItem}>
                   <Image 
-                    source={{ uri: PLACEHOLDER_AVATAR }} 
+                    source={{ uri: director.profile_path }} 
                     style={styles.crewImage} 
                   />
-                  <Text style={styles.crewName} numberOfLines={2}>{director}</Text>
+                  <Text style={styles.crewName} numberOfLines={2}>{director.name}</Text>
                   <Text style={styles.crewRole}>Director</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {hasWriters && (
+          <View style={styles.crewSection}>
+            <Text style={styles.sectionTitle}>Writers</Text>
+            <View style={styles.crewRow}>
+              {movie.writers.map((writer, index) => (
+                <View key={index} style={styles.crewItem}>
+                  <Image 
+                    source={{ uri: writer.profile_path }} 
+                    style={styles.crewImage} 
+                  />
+                  <Text style={styles.crewName} numberOfLines={2}>{writer.name}</Text>
+                  <Text style={styles.crewRole}>{writer.job || 'Writer'}</Text>
                 </View>
               ))}
             </View>
@@ -310,15 +488,14 @@ const MovieDetails = ({ route, navigation }) => {
         {hasDistributors && (
           <View style={styles.crewSection}>
             <Text style={styles.sectionTitle}>Production</Text>
-            <View style={styles.crewRow}>
-              <View style={styles.crewItem}>
-                <Image 
-                  source={{ uri: PLACEHOLDER_AVATAR }} 
-                  style={styles.crewImage} 
-                />
-                <Text style={styles.crewName} numberOfLines={2}>{movie.distributors}</Text>
-                <Text style={styles.crewRole}>Distributor</Text>
-              </View>
+            <View style={styles.distributorsContainer}>
+              {typeof movie.distributors === 'string' ? (
+                <Text style={styles.distributorText}>{movie.distributors}</Text>
+              ) : (
+                movie.distributors.map((distributor, index) => (
+                  <Text key={index} style={styles.distributorText}>{distributor}</Text>
+                ))
+              )}
             </View>
           </View>
         )}
@@ -329,18 +506,25 @@ const MovieDetails = ({ route, navigation }) => {
   return (
     <View style={styles.wrapper}>
       <SafeAreaView style={styles.container}>
-        {/* Fixed Header with back button */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-back" size={24} color="#F7F9FA" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Movie Details</Text>
-        </View>
-
-        <ScrollView showsVerticalScrollIndicator={false}>
+        {/* NavigationHeader */}
+        <NavigationHeader 
+          title={movie?.title || 'Movie Details'} 
+          backgroundColor={COLORS.gunmetal}
+        />
+        
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={dynamicStyles.contentPadding}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={handleRefresh}
+              tintColor="#FFFFFF"
+              colors={['#FFFFFF']}
+              progressBackgroundColor="#232F3E"
+            />
+          }
+        >
           {/* Movie Poster */}
           <View style={styles.posterContainer}>
             <Image 
@@ -395,11 +579,6 @@ const MovieDetails = ({ route, navigation }) => {
             
             {/* Crew Section with Images */}
             {renderCrewSection()}
-            
-            {/* Writers info if available */}
-            <Text style={styles.writersInfo}>
-              Writers: Information not available
-            </Text>
           </View>
         </ScrollView>
       </SafeAreaView>

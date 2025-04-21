@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native';
+import { COLORS as AppColors } from './colors';
 
 const COLORS = {
-  background: '#232F3E', // Amazon Gunmetal
+  background: AppColors.gunmetal, // Amazon Gunmetal
   cardBackground: '#131A22', // Amazon Eerie Black
   text: '#FFFFFF', // White
   textSecondary: '#F7F9FA', // Off-white
@@ -23,80 +24,78 @@ export const styles = StyleSheet.create({
   // Header
   header: {
     width: '100%',
-    height: 50,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     marginTop: 10,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 17,
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    color: COLORS.text,
-    marginLeft: 16,
+    color: '#F7F9FA',
+    fontSize: 20,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   contentContainer: {
-    width: '100%',
-    paddingBottom: 220,
-    alignItems: 'center',
+    paddingBottom: 120,
   },
   // Cinema image container
   cinemaImageContainer: {
-    position: 'relative',
-    width: 361,
-    height: 328,
-    alignSelf: 'center',
-    marginTop: 10,
-    borderRadius: BORDER_RADIUS,
-    overflow: 'hidden',
+    width: '100%',
+    height: 220,
+    marginBottom: 16,
   },
   cinemaImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F2F2F2',
+    borderRadius: 12,
   },
   // Cinema info container
   cinemaInfoContainer: {
-    width: 361,
     paddingHorizontal: 16,
-    alignSelf: 'center',
-    marginTop: 25,
-    gap: 9,
+    marginBottom: 24,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   cinemaName: {
-    fontSize: 20,
-    fontFamily: 'Inter',
+    fontSize: 22,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#FFFFFF',
+    flex: 1,
   },
   distanceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  locationIcon: {
+    marginRight: 5,
   },
   distanceText: {
-    fontSize: 13,
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    color: COLORS.text,
-    textAlign: 'right',
+    fontSize: 14,
+    color: '#FEBD69',
+  },
+  cityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  cityText: {
+    fontSize: 14,
+    color: '#FFFFFF',
   },
   addressText: {
-    fontSize: 13,
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    color: COLORS.text,
+    fontSize: 15,
+    color: '#E0E0E0',
+    marginTop: 8,
   },
   phoneText: {
     fontSize: 13,
@@ -106,88 +105,119 @@ export const styles = StyleSheet.create({
   },
   // Movies section
   moviesContainer: {
-    width: 361,
+    marginTop: 20,
     paddingHorizontal: 16,
-    alignSelf: 'center',
-    marginTop: 35,
-    gap: 16,
   },
   moviesTitle: {
-    fontSize: 13,
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: 15,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 16,
   },
   posterScroll: {
-    marginBottom: 30,
+    marginBottom: 24,
   },
   posterContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 5,
-    marginRight: 12,
+    width: 120,
+    height: 180,
+    borderRadius: 10,
     overflow: 'hidden',
+    marginRight: 12,
   },
   posterImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F2F2F2',
   },
   nextArrowContainer: {
+    width: 40,
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
-    height: 40,
   },
   // Show times button
   showTimesButton: {
-    width: 329,
-    height: 40,
-    backgroundColor: COLORS.accentColor,
-    borderRadius: BORDER_RADIUS,
-    justifyContent: 'center',
+    backgroundColor: '#FEBD69',
+    borderRadius: 8,
+    padding: 16,
     alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 30,
+    marginBottom: 24,
   },
   showTimesButtonText: {
-    color: 'black',
-    fontSize: 15,
-    fontFamily: 'Inter',
-    fontWeight: '500',
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '600',
   },
   // Loading and error states
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: '#141414',
   },
   loadingText: {
-    color: COLORS.text,
+    color: '#F7F9FA',
     marginTop: 16,
     fontSize: 16,
-    fontFamily: 'Inter',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#141414',
+    padding: 16,
   },
   errorText: {
-    color: COLORS.errorColor,
-    fontSize: 18,
+    color: '#FF5252',
+    marginBottom: 24,
+    fontSize: 16,
     textAlign: 'center',
-    marginBottom: 20,
-    fontFamily: 'Inter',
   },
   backButtonText: {
-    color: COLORS.accentColor,
+    color: '#FEBD69',
     fontSize: 16,
-    fontWeight: '500',
-    fontFamily: 'Inter',
+  },
+  // New styles for cinema details updates
+  descriptionSection: {
+    marginTop: 10, 
+    marginBottom: 20
+  },
+  descriptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FEBD69',
+    marginBottom: 8
+  },
+  descriptionText: {
+    fontSize: 15,
+    color: '#E0E0E0',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  websiteContainer: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 16,
+  },
+  websiteButton: {
+    backgroundColor: COLORS.accentColor, // Amazon Apricot color
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  websiteIcon: {
+    marginRight: 8,
+  },
+  websiteButtonText: {
+    color: '#000000', // Black text for better contrast on apricot
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 

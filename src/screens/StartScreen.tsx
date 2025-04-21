@@ -3,23 +3,28 @@ import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Image, Activity
 import { useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import AIChatBox from '../components/AIChatBox';
-import { setResponse } from '../store/aiSlice';
+import { setResponse, addMessageToHistory, ChatMessage } from '../store/aiSlice';
 import { AppDispatch } from '../store';
 import { styles } from '../styles/StartScreen.styles';
 import { MovieShowtimeAPI } from '../services';
+import { searchMovies } from '../store/movieSlice';
+import { useRoute } from '@react-navigation/native';
+import navigationHistory from '../services/navigationHistory';
+import { COLORS } from '../styles/theme';
+import NavigationHeader from '../components/NavigationHeader';
 
 const prompts = [
   {
     title: "Movies that are currently playing",
-    action: "movies currently playing"
+    action: "What movies are currently playing?"
   },
   {
     title: "Find cinemas around me",
-    action: "closest cinemas"
+    action: "What are the closest cinema theaters near me? Show me a list of nearby cinemas around my location."
   },
   {
-    title: "View showtimes of The Martian",
-    action: "showtimes for The Martian"
+    title: "View showtimes of The Amateur",
+    action: "Show me showtimes for The Amateur"
   }
 ];
 
@@ -29,6 +34,33 @@ const StartScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [canGoForward, setCanGoForward] = useState(false);
+  const route = useRoute<any>();
+  
+  // Initialize and track navigation history
+  useEffect(() => {
+    const initNavHistory = async () => {
+      await navigationHistory.initialize();
+      navigationHistory.addToHistory(route.name, route.params);
+      setCanGoForward(navigationHistory.canGoForward());
+    };
+    
+    initNavHistory();
+    
+    const unsubscribe = navigation.addListener('state', () => {
+      setCanGoForward(navigationHistory.canGoForward());
+    });
+    
+    return () => unsubscribe();
+  }, [navigation, route.name, route.params]);
+  
+  // Handle forward navigation
+  const handleForwardPress = () => {
+    const nextScreen = navigationHistory.goForward();
+    if (nextScreen) {
+      navigation.navigate(nextScreen.routeName, nextScreen.params);
+    }
+  };
   
   const loadMovies = useCallback(async () => {
     if (retryCount === 0) {
@@ -50,7 +82,7 @@ const StartScreen = ({ navigation }) => {
         setTimeout(() => {
           setRetryCount(prev => prev + 1);
           loadMovies();
-        }, 2000 * (retryCount + 1)); 
+        }, 2000 * (retryCount + 1));
       }
     } finally {
       setIsLoading(false);
@@ -65,21 +97,34 @@ const StartScreen = ({ navigation }) => {
     dispatch(setResponse("Welcome to Movie Showtime! Ask me about movies, cinemas, or showtimes."));
   }, [dispatch]);
   
+  // Handle prompts by submitting them as user messages to the AI
   const handlePromptPress = (action: string) => {
-    dispatch(setResponse(`You asked about: "${action}"`));
+    console.log('Prompt pressed:', action);
     
-    if (action === "movies currently playing") {
-      navigation.navigate('MovieGallery');
-    } else if (action === "closest cinemas") {
-      navigation.navigate('CinemaGallery');
-    } else if (action === "showtimes for The Martian") {
-      const today = new Date().toISOString().split('T')[0];
-      navigation.navigate('MovieShowtime', { 
-        movieId: '184126',
-        movieTitle: "The Martian",
-        poster: 'https://via.placeholder.com/500x750?text=The+Martian'
+    const m = action.match(/showtimes for (.+)$/i);
+    if (m) {
+      const title = m[1].trim();
+      const now = new Date();
+      const tzOffset = now.getTimezoneOffset() * 60000;
+      const local = new Date(now.getTime() - tzOffset);
+      const todayISO = local.toISOString().slice(0, 10);
+
+      navigation.navigate('MovieShowtime', {
+        movieTitle: title,
+        date: todayISO,
+        fromAI: true
       });
+      return;
     }
+    
+
+    const userMessage: ChatMessage = { role: 'user', content: action };
+
+    dispatch(addMessageToHistory(userMessage));
+
+    dispatch(setResponse(`Processing your request: "${action}"`));
+
+    console.log(`Prompt submitted to AI: ${action}`);
   };
   
   const renderMoviePosters = () => {
@@ -103,13 +148,14 @@ const StartScreen = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={{ flex: 1 }}>
+        <NavigationHeader 
+          title="What can I help with?" 
+          backgroundColor={COLORS.gunmetal} 
+          titleColor="#FFFFFF"
+          fontSize={18}
+          customForwardAction={canGoForward ? handleForwardPress : undefined}
+        />
         <ScrollView contentContainerStyle={styles.wrapper}>
-          {/* Page Title */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>What can I help with?</Text>
-          </View>
-          
-          {/* Error message if present */}
           {error && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>
@@ -119,9 +165,7 @@ const StartScreen = ({ navigation }) => {
             </View>
           )}
           
-          {/* Prompts */}
           <View style={styles.promptsContainer}>
-            {/* Movies Currently Playing */}
             <TouchableOpacity 
               style={styles.promptCard}
               onPress={() => handlePromptPress(prompts[0].action)}
@@ -151,7 +195,6 @@ const StartScreen = ({ navigation }) => {
               </View>
             </TouchableOpacity>
             
-            {/* Find Cinemas Around Me */}
             <TouchableOpacity 
               style={styles.promptCard}
               onPress={() => handlePromptPress(prompts[1].action)}
@@ -166,7 +209,6 @@ const StartScreen = ({ navigation }) => {
               </View>
             </TouchableOpacity>
             
-            {/* View Showtimes of The Martian */}
             <TouchableOpacity 
               style={styles.promptCard}
               onPress={() => handlePromptPress(prompts[2].action)}

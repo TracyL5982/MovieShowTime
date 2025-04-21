@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useEffect, useRef } from 'react';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
@@ -19,10 +19,21 @@ import {
   Inter_600SemiBold,
   Inter_700Bold 
 } from '@expo-google-fonts/inter';
+import navigationHistory from './src/services/navigationHistory';
 
 SplashScreen.preventAutoHideAsync();
 
-const Stack = createNativeStackNavigator();
+// Define navigator param list type
+type RootStackParamList = {
+  StartScreen: undefined;
+  MovieGallery: any;
+  MovieDetails: any;
+  MovieShowtime: any;
+  CinemaGallery: any;
+  CinemaDetails: any;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -33,6 +44,14 @@ export default function App() {
     'Inter-Bold': Inter_700Bold,
     'Inter-Regular': Inter_400Regular,
   });
+  
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  const routeNameRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // Initialize navigation history
+    navigationHistory.initialize();
+  }, []);
 
   useEffect(() => {
     async function prepare() {
@@ -50,7 +69,40 @@ export default function App() {
 
   return (
     <Provider store={store}>
-      <NavigationContainer>
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={() => {
+          // Save the initial route name
+          const currentRoute = navigationRef.current?.getCurrentRoute();
+          routeNameRef.current = currentRoute?.name || null;
+          
+          // Add the initial route to history if it exists
+          if (currentRoute?.name) {
+            console.log(`Adding initial route: ${currentRoute.name}`);
+            navigationHistory.addToHistory(currentRoute.name, currentRoute.params);
+          }
+        }}
+        onStateChange={() => {
+          const previousRouteName = routeNameRef.current;
+          const currentRoute = navigationRef.current?.getCurrentRoute();
+          const currentRouteName = currentRoute?.name;
+          
+          if (currentRouteName && previousRouteName !== currentRouteName) {
+            console.log(`Navigation changed: ${previousRouteName} → ${currentRouteName}`);
+            
+            // Record route change to history
+            navigationHistory.addToHistory(currentRouteName, currentRoute?.params);
+            
+            // For debugging - check if logHistory exists before calling
+            if (typeof navigationHistory.logHistory === 'function') {
+              navigationHistory.logHistory();
+            }
+          }
+          
+          // Save the current route name for the next state change
+          routeNameRef.current = currentRouteName ?? null;
+        }}
+      >
         <StatusBar style="light" />
         <Stack.Navigator
           initialRouteName="StartScreen"

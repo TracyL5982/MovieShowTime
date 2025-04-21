@@ -4,6 +4,9 @@ export interface UserLocation {
   latitude: number;
   longitude: number;
   timestamp: number;
+  city?: string;
+  region?: string;
+  country?: string;
 }
 
 export interface GeocodeResult {
@@ -14,7 +17,6 @@ export interface GeocodeResult {
   name: string;
 }
 
-// request and get the user's current location
 export const getCurrentLocation = async (): Promise<UserLocation | null> => {
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -39,7 +41,6 @@ export const getCurrentLocation = async (): Promise<UserLocation | null> => {
   }
 };
 
-// get address information based on coordinates
 export const getAddressFromCoordinates = async (
   latitude: number, 
   longitude: number
@@ -68,7 +69,6 @@ export const getAddressFromCoordinates = async (
   }
 };
 
-// Calculate distance between two coordinates in kilometers
 export const calculateDistance = (
   lat1: number, 
   lon1: number, 
@@ -87,17 +87,14 @@ export const calculateDistance = (
   return distance;
 };
 
-// Convert degrees to radians
 const deg2rad = (deg: number): number => {
   return deg * (Math.PI/180);
 };
 
-// Convert kilometers to miles
 export const kmToMiles = (km: number): number => {
   return km * 0.621371;
 };
 
-// Default location for fallback (New York City)
 export const DEFAULT_LOCATION = {
   latitude: 40.7128,
   longitude: -74.0060,

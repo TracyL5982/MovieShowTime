@@ -181,4 +181,12 @@ export const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
   },
+  
+  // Empty sub text
+  emptySubText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
 }); 

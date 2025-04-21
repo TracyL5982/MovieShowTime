@@ -32,7 +32,6 @@ export const ICON_CONFIG = {
   }
 };
 
-// Export everything
 export {
   COLORS,
   FONTS,

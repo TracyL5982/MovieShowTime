@@ -43,11 +43,15 @@ const cinemaChainsData: Partial<Cinema>[] = [
   {
     name: 'Landmark Theaters',
     logo: 'https://www.landmarktheatres.com/themes/custom/landmark/logo.svg'
+  },
+  {
+    name: 'TCL Chinese Theatre',
+    logo: 'https://www.tclchinesetheatres.com/wp-content/uploads/2019/08/TCLIMAX001.png'
   }
 ];
 
-const cinemaDatabaseRaw: Partial<Cinema>[] = [
-  // New York 
+// Simplified cinema database - contains a minimal set of sample cinemas for development
+const predefinedCinemas: Partial<Cinema>[] = [
   {
     id: 'AMC-Empire25',
     name: 'AMC Empire 25',
@@ -58,26 +62,6 @@ const cinemaDatabaseRaw: Partial<Cinema>[] = [
     location: { lat: 40.7566, lng: -73.9885 }
   },
   {
-    id: 'Regal-UnionSquare',
-    name: 'Regal Union Square',
-    address: '850 Broadway',
-    city: 'New York',
-    state: 'NY',
-    postalCode: '10003',
-    location: { lat: 40.7347, lng: -73.9915 }
-  },
-  {
-    id: 'AMC-Lincoln',
-    name: 'AMC Lincoln Square 13',
-    address: '1998 Broadway',
-    city: 'New York',
-    state: 'NY',
-    postalCode: '10023',
-    location: { lat: 40.7751, lng: -73.9821 }
-  },
-  
-  // Los Angeles 
-  {
     id: 'Chinese-TCL',
     name: 'TCL Chinese Theatre',
     address: '6925 Hollywood Blvd',
@@ -85,55 +69,6 @@ const cinemaDatabaseRaw: Partial<Cinema>[] = [
     state: 'CA',
     postalCode: '90028',
     location: { lat: 34.1022, lng: -118.3415 }
-  },
-  {
-    id: 'Regal-LA-Live',
-    name: 'Regal LA Live',
-    address: '1000 W Olympic Blvd',
-    city: 'Los Angeles',
-    state: 'CA',
-    postalCode: '90015',
-    location: { lat: 34.0457, lng: -118.2671 }
-  },
-  {
-    id: 'AMC-Century-City',
-    name: 'AMC Century City 15',
-    address: '10250 Santa Monica Blvd',
-    city: 'Los Angeles',
-    state: 'CA',
-    postalCode: '90067',
-    location: { lat: 34.0564, lng: -118.4195 }
-  },
-  
-  // Chicago 
-  {
-    id: 'AMC-River-East',
-    name: 'AMC River East 21',
-    address: '322 E Illinois St',
-    city: 'Chicago',
-    state: 'IL',
-    postalCode: '60611',
-    location: { lat: 41.8896, lng: -87.6213 }
-  },
-  {
-    id: 'AMC-NEWCITY',
-    name: 'AMC NEWCITY 14',
-    address: '1500 N Clybourn Ave',
-    city: 'Chicago',
-    state: 'IL',
-    postalCode: '60610',
-    location: { lat: 41.9105, lng: -87.6473 }
-  },
-  
-  // San Francisco 
-  {
-    id: 'AMC-Metreon',
-    name: 'AMC Metreon 16',
-    address: '135 4th St',
-    city: 'San Francisco',
-    state: 'CA',
-    postalCode: '94103',
-    location: { lat: 37.7841, lng: -122.4047 }
   },
   {
     id: 'Alamo-Mission',
@@ -149,13 +84,28 @@ const cinemaDatabaseRaw: Partial<Cinema>[] = [
 // allocate a logo to each cinema based on its name
 const allocateLogos = (cinemas: Partial<Cinema>[]): Cinema[] => {
   return cinemas.map(cinema => {
-    const chainMatch = cinemaChainsData.find(chain => 
-      cinema.name?.includes(chain.name?.split(' ')[0] || '')
-    );
+    let logo = 'https://via.placeholder.com/150?text=Cinema';
+    
+    // Match cinema chains more comprehensively
+    if (cinema.name?.includes('AMC')) {
+      logo = 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/AMC_Theatres_logo.svg/220px-AMC_Theatres_logo.svg.png';
+    } else if (cinema.name?.includes('Regal')) {
+      logo = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Regal_Cinemas_2018.svg/220px-Regal_Cinemas_2018.svg.png';
+    } else if (cinema.name?.includes('Cinemark')) {
+      logo = 'https://upload.wikimedia.org/wikipedia/en/thumb/6/6f/Cinemark_logo.svg/220px-Cinemark_logo.svg.png';
+    } else if (cinema.name?.includes('Alamo') || cinema.name?.includes('Drafthouse')) {
+      logo = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Alamo_Drafthouse_Cinema_logo.svg/220px-Alamo_Drafthouse_Cinema_logo.svg.png';
+    } else if (cinema.name?.includes('Marcus')) {
+      logo = 'https://www.marcustheatres.com/images/Default/mt-logo-yellow-328x86.png';
+    } else if (cinema.name?.includes('Landmark')) {
+      logo = 'https://www.landmarktheatres.com/themes/custom/landmark/logo.svg';
+    } else if (cinema.name?.includes('TCL') || cinema.name?.includes('Chinese')) {
+      logo = 'https://www.tclchinesetheatres.com/wp-content/uploads/2019/08/TCLIMAX001.png';
+    }
     
     return {
       ...cinema,
-      logo: chainMatch?.logo || 'https://via.placeholder.com/150?text=Cinema',
+      logo,
       id: cinema.id || `cinema-${Math.random().toString(36).substring(2, 9)}`,
       distance: 0,
       movies: []
@@ -163,7 +113,7 @@ const allocateLogos = (cinemas: Partial<Cinema>[]): Cinema[] => {
   });
 };
 
-const cinemaDatabase: Cinema[] = allocateLogos(cinemaDatabaseRaw);
+const cinemaDatabase: Cinema[] = allocateLogos(predefinedCinemas);
 
 export const getNearbyCinemas = async (limit: number = 5): Promise<Cinema[]> => {
   try {
@@ -364,14 +314,7 @@ const generateFallbackCinemaShowtimes = (cinemaId: string, movies: Movie[]): {[k
 const getCinemaNameFromId = (cinemaId: string): string => {
   const knownCinemas: {[key: string]: string} = {
     'AMC-Empire25': 'AMC Empire 25',
-    'Regal-UnionSquare': 'Regal Union Square',
-    'AMC-Lincoln': 'AMC Lincoln Square 13',
     'Chinese-TCL': 'TCL Chinese Theatre',
-    'Regal-LA-Live': 'Regal LA Live',
-    'AMC-Century-City': 'AMC Century City 15',
-    'AMC-River-East': 'AMC River East 21',
-    'AMC-NEWCITY': 'AMC NEWCITY 14',
-    'AMC-Metreon': 'AMC Metreon 16',
     'Alamo-Mission': 'Alamo Drafthouse New Mission'
   };
   

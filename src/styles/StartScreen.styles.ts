@@ -21,18 +21,18 @@ export const styles = StyleSheet.create({
     paddingBottom: 100, 
   },
   titleContainer: {
-    width: '100%',
-    height: 50,
-    marginTop: 10,
-    overflow: 'hidden',
-    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   title: {
-    color: COLORS.pureWhite, 
-    fontSize: FONT_SIZES.regular,
-    fontFamily: FONTS.primary,
-    fontWeight: FONT_WEIGHTS.medium,
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    flex: 1,
   },
   promptsContainer: {
     width: '100%',
@@ -139,6 +139,12 @@ export const styles = StyleSheet.create({
     fontSize: FONT_SIZES.small,
     color: COLORS.alertRed,
     textAlign: 'center',
+  },
+  navButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 
 

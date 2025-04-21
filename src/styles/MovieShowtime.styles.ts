@@ -426,4 +426,12 @@ export const styles = StyleSheet.create({
     color: COLORS.pureWhite,
     textAlign: 'center',
   },
+  
+  placeholderCard: {
+    backgroundColor: '#1A232D',
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#2A3541',
+    opacity: 0.8
+  },
 }); 

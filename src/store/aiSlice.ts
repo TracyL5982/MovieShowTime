@@ -1,42 +1,79 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+// Define cinema interface for structured data
+export interface CinemaData {
+  name: string;
+  address?: string;
+  description: string;
+  url?: string;
+  distance?: string;
+}
+
+export interface StructuredCinemaResponse {
+  cinemas: CinemaData[];
+}
+
+// Define the message interface
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 interface AIState {
-  isListening: boolean;
-  transcript: string;
-  response: string;
   isVisible: boolean;
-  error: string | null;
+  response: string | null;
+  conversationHistory: ChatMessage[];
+  chatboxHeight: number;
+  structuredCinemaData: StructuredCinemaResponse | null;
 }
 
 const initialState: AIState = {
-  isListening: false,
-  transcript: '',
-  response: '',
   isVisible: true,
-  error: null,
+  response: null,
+  conversationHistory: [],
+  chatboxHeight: 0,
+  structuredCinemaData: null,
 };
 
 const aiSlice = createSlice({
   name: 'ai',
   initialState,
   reducers: {
-    setListening: (state, action: PayloadAction<boolean>) => {
-      state.isListening = action.payload;
-    },
-    setTranscript: (state, action: PayloadAction<string>) => {
-      state.transcript = action.payload;
+    setVisible: (state, action: PayloadAction<boolean>) => {
+      state.isVisible = action.payload;
     },
     setResponse: (state, action: PayloadAction<string>) => {
       state.response = action.payload;
     },
-    toggleVisibility: (state) => {
-      state.isVisible = !state.isVisible;
+    addMessageToHistory: (state, action: PayloadAction<ChatMessage>) => {
+      state.conversationHistory.push(action.payload);
     },
-    setError: (state, action: PayloadAction<string>) => {
-      state.error = action.payload;
+    clearConversationHistory: (state) => {
+      state.conversationHistory = [];
+    },
+    setChatboxHeight: (state, action: PayloadAction<number>) => {
+      state.chatboxHeight = action.payload;
+    },
+    updateMessageInHistory: (state, action: PayloadAction<{ index: number, message: ChatMessage }>) => {
+      const { index, message } = action.payload;
+      if (index >= 0 && index < state.conversationHistory.length) {
+        state.conversationHistory[index] = message;
+      }
+    },
+    setStructuredCinemaData: (state, action: PayloadAction<StructuredCinemaResponse>) => {
+      state.structuredCinemaData = action.payload;
     },
   },
 });
 
-export const { setListening, setTranscript, setResponse, toggleVisibility, setError } = aiSlice.actions;
+export const { 
+  setVisible, 
+  setResponse, 
+  addMessageToHistory, 
+  clearConversationHistory,
+  setChatboxHeight,
+  updateMessageInHistory,
+  setStructuredCinemaData
+} = aiSlice.actions;
+
 export default aiSlice.reducer; 

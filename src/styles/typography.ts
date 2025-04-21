@@ -69,4 +69,23 @@ export const TEXT_STYLES = {
     fontSize: FONT_SIZES.tiny,
     color: COLORS.pureWhite,
   } as TextStyle,
+  
+  // Text styles for headings
+  h1: {
+    fontFamily: FONTS.primaryBold,
+    fontSize: FONT_SIZES.xxlarge,
+    color: COLORS.eerieBlack,
+  } as TextStyle,
+  
+  h2: {
+    fontFamily: FONTS.primaryBold,
+    fontSize: FONT_SIZES.xlarge,
+    color: COLORS.eerieBlack,
+  } as TextStyle,
+  
+  h3: {
+    fontFamily: FONTS.primarySemiBold,
+    fontSize: FONT_SIZES.large,
+    color: COLORS.eerieBlack,
+  } as TextStyle,
 }; 
